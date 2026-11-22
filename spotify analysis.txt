@@ -1,0 +1,187 @@
+-- Spotify User Behaviour Analysis 
+-- Author: Vibhuti
+-- Project: Spotify Survey Analysis
+-- Purpose: Exploring listening habits and subscription patterns
+
+--  1. Getting to know our data
+SELECT *
+FROM survey
+LIMIT 10;
+
+-- 2. How many people are in our survey?
+SELECT COUNT(*) AS total_respondents
+FROM survey;
+
+-- 3. Subscription plan distribution
+SELECT
+    spotify_subscription_plan,
+    COUNT(*) AS people
+FROM survey
+GROUP BY spotify_subscription_plan;
+
+-- 4. How long have people been using Spotify?
+SELECT
+    spotify_usage_period,
+    COUNT(*) AS people
+FROM survey
+GROUP BY spotify_usage_period;
+
+--  5. Usage period vs Premium subscribers
+SELECT
+    spotify_usage_period,
+    COUNT(*) AS people,
+    SUM(spotify_subscription_plan LIKE 'premium%') AS premium_people
+FROM survey
+GROUP BY spotify_usage_period;
+
+-- 6. percent of premium subscribers for each usage_period bracket 
+SELECT spotify_usage_period,
+       COUNT(*) AS people,
+       SUM(spotify_subscription_plan LIKE 'Premium%') AS premium_people,
+       ROUND(100.0 * SUM(spotify_subscription_plan LIKE 'Premium%') / COUNT(*), 1) AS percent_premium
+FROM survey
+GROUP BY spotify_usage_period;
+
+-- 7. free users willingness to pay?
+SELECT spotify_usage_period,
+count(*) as free_users,
+SUM (premium_sub_willingness= 'Yes') as willing,
+round(100.0 * SUM( premium_sub_willingness= 'Yes')/count (*),1) as percent_willing
+from survey
+WHERE spotify_subscription_plan like 'Free%'
+group by spotify_usage_period;
+
+
+--8. music v/s podcast 
+SELECT preferred_listening_content,
+count(*) as people, 
+round(100.0 * sum( spotify_subscription_plan like 'Premium%')/ count(*),1) as percent_premium,
+round(100.0 * sum( spotify_subscription_plan like 'Free%' and premium_sub_willingness= 'Yes')
+/ sum(spotify_subscription_plan like 'Free%'),1) as percent_free_willing
+from survey 
+group by preferred_listening_content;
+
+
+--9. who rates the spotify recommendation system the lowest? 
+SELECT music_expl_method,
+count(*) as people,
+round(avg(music_recc_rating),2) as rec_rating
+from survey
+where music_expl_method in ('recommendations','Playlists','Radio','Others')
+group by music_expl_method
+order by rec_rating desc;
+
+
+--10. are higher reccomendation ratings linked to willingness to pay?
+select music_recc_rating,
+count(*) as free_users,
+round(100.0 * sum(premium_sub_willingness= 'Yes')/ count(*),1) as percent_willing
+from survey
+where spotify_subscription_plan like 'Free%'
+GROUP by music_recc_rating
+order by music_recc_rating;
+
+
+--11. are low rec users skewing?
+SELECT CASE WHEN music_recc_rating <= 2 THEN 'Low (1-2)' ELSE 'Mid/High (3-5)' END AS section,
+       COUNT(*) AS free_users,
+       ROUND(100.0 * SUM(preferred_listening_content = 'Podcast') / COUNT(*), 1) AS pct_podcast,
+       ROUND(100.0 * SUM(premium_sub_willingness = 'Yes') / COUNT(*), 1) AS pct_willing
+FROM survey
+WHERE spotify_subscription_plan LIKE 'Free%'
+GROUP BY section;
+
+
+SELECT CASE WHEN music_recc_rating <= 2 THEN 'Low (1-2)' ELSE 'Mid/High (3-5)' END AS section,
+       COUNT(*) AS free_users,
+       SUM(premium_sub_willingness = 'Yes') AS willing,
+       ROUND(100.0 * SUM(premium_sub_willingness = 'Yes') / COUNT(*), 1) AS pct_willing
+FROM survey
+WHERE spotify_subscription_plan LIKE 'Free%'
+  AND preferred_listening_content = 'Music'
+GROUP BY section;
+
+
+--12. warm leads?
+SELECT premium_sub_willingness AS would_pay,
+       COUNT(*) AS free_users,
+       ROUND(100.0 * SUM(preferred_listening_content = 'Podcast') / COUNT(*), 1) AS percent_podcast,
+       ROUND(100.0 * SUM(spotify_usage_period IN ('6 months to 1 year','1 year to 2 years')) / COUNT(*), 1) AS percent_6m_to_2y,
+       ROUND(AVG(music_recc_rating), 2) AS avg_rec_rating
+FROM survey
+WHERE spotify_subscription_plan LIKE 'Free%'
+GROUP BY premium_sub_willingness;
+
+
+--13.are the observations correct?
+SELECT
+    preferred_listening_content,
+    premium_sub_willingness,
+    COUNT(*) AS people
+FROM survey
+WHERE spotify_subscription_plan LIKE 'Free%'
+GROUP BY
+    preferred_listening_content,
+    premium_sub_willingness
+ORDER BY preferred_listening_content, people DESC;
+
+
+--14. what plan do the leads want?
+Select preffered_premium_plan as plan,
+count(*) as people, 
+round(100.0 *count(*)/ sum(count(*)) over(),1) as percent
+from survey 
+where spotify_subscription_plan like 'Free%'
+and premium_sub_willingness= 'Yes'
+and preffered_premium_plan is not NULL
+and preffered_premium_plan <> ''
+group by preffered_premium_plan
+order by people desc;
+
+
+SELECT preffered_premium_plan AS plan, COUNT(*) AS people
+FROM survey
+WHERE spotify_subscription_plan LIKE 'Free%'
+  AND premium_sub_willingness = 'Yes'
+  AND preferred_listening_content = 'Podcast'
+  AND preffered_premium_plan <> ''
+GROUP BY preffered_premium_plan
+ORDER BY people DESC;
+
+--comparing plan preferences 
+SELECT
+    preferred_listening_content,
+    preffered_premium_plan AS plan,
+    COUNT(*) AS people,
+    ROUND(
+        100.0 * COUNT(*) /
+        SUM(COUNT(*)) OVER (
+            PARTITION BY preferred_listening_content
+        ),
+        1
+    ) AS percent
+FROM survey
+WHERE spotify_subscription_plan LIKE 'Free%'
+  AND premium_sub_willingness = 'Yes'
+  AND preffered_premium_plan IS NOT NULL
+  AND preffered_premium_plan <> ''
+GROUP BY
+    preferred_listening_content,
+    preffered_premium_plan
+ORDER BY
+    preferred_listening_content,
+    people DESC;
+
+
+-- 15. Same podcast vs music check, rebuilt with a CTE
+WITH free_users AS (
+    SELECT *
+    FROM survey
+    WHERE spotify_subscription_plan LIKE 'Free%'
+)
+SELECT preferred_listening_content,
+       COUNT(*) AS free_users,
+       SUM(premium_sub_willingness = 'Yes') AS willing,
+       ROUND(100.0 * SUM(premium_sub_willingness = 'Yes') / COUNT(*), 1) AS percent_willing
+FROM free_users
+GROUP BY preferred_listening_content;
