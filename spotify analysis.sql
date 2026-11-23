@@ -72,7 +72,7 @@ group by music_expl_method
 order by rec_rating desc;
 
 
---10. are higher reccomendation ratings linked to willingness to pay?
+--10. are higher recommendation ratings linked to willingness to pay?
 select music_recc_rating,
 count(*) as free_users,
 round(100.0 * sum(premium_sub_willingness= 'Yes')/ count(*),1) as percent_willing
@@ -184,4 +184,5 @@ SELECT preferred_listening_content,
        SUM(premium_sub_willingness = 'Yes') AS willing,
        ROUND(100.0 * SUM(premium_sub_willingness = 'Yes') / COUNT(*), 1) AS percent_willing
 FROM free_users
+
 GROUP BY preferred_listening_content;
