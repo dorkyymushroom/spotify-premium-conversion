@@ -2,11 +2,11 @@
 
 
 
-**Question:** Which free Spotify users are most likely to upgrade to Premium, and what should the product do about it? [Independent portfolio project, not affiliated with Spotify ]
+**Question:** Which free Spotify users are most likely to upgrade to Premium, and what should the product do about it? [ Independent portfolio project, not affiliated with Spotify ]
 
 
 
-**Data:** Survey of 520 Spotify users (India pricing). Analysed in SQL (SQLite), with a revenue model in Google Sheets and a sample-size calculation in Python. Public survey dataset from [source], not collected by me
+**Data:** Survey of 520 Spotify users (India pricing). Analysed in SQL (SQLite), with a revenue model in Google Sheets and a sample-size calculation in Python. Public survey dataset from kaggle, not collected by me
 
 > This is survey data, not usage logs. It shows which kinds of users are more likely to say they'd pay. It cannot measure retention or real conversion.
 
@@ -45,9 +45,9 @@ Full detail in `product brief.pdf`.
 
 ## Files
 
-- `analysis.sql`: 15 SQL queries, including a CTE and window functions
+- `spotify_analysis.sql`: 15 SQL queries, including a CTE and window functions
 - `sample_size.py`: A/B test sample-size calculation
-- `revenue_model.png`: screenshot of the Google Sheets revenue model
+- `revenue_model.pdf`: screenshot of the Google Sheets revenue model
 - `product_brief.pdf`: one-page product brief
 - `Spotify_data.csv`: source survey data
 |`Spotify\_data.csv`|Source survey data|
